@@ -3,8 +3,6 @@
 #include <stdlib.h>
 #include <omp.h>
 
-
-
 #define NITERATIONS 10
 
 #define MATRIX(m, i, j) m[(i)*n + (j)]
@@ -13,11 +11,6 @@
  * @brief Matrix size.
  */
 static int n = 0;
-
-/*
- * @brief Number of threads.
- */
-static int nthreads = 0;
 
 static double *a;
 static double *b;
@@ -53,18 +46,16 @@ int main(int argc, char **argv)
 {
 	double start, end;
 
-	if (argc != 3)
+	if (argc != 2)
 	{
-		printf("Usage: mm <matrix size> <nthreads>\n");
+		printf("Usage: mm <matrix size>\n");
 		return (EXIT_SUCCESS);
 	}
 
 	n = atoi(argv[1]);
-	nthreads = atoi(argv[2]);
 
 	/* Sanity check. */
 	assert(n > 0);
-	assert(nthreads > 0);
 
 	/* Create matrices. */
 	assert((a = malloc(n*n*sizeof(double))) != NULL);
