@@ -84,7 +84,13 @@ static void matrix_mult2(double *restrict c, const double *restrict a, const dou
  */
 static void sparsematrix_mult(double *restrict c, const double *restrict a, const double *restrict b, int n)
 {
-	#pragma omp parallel for schedule(dynamic, 1)
+#if defined(_SCHEDULE_DYNAMIC_)
+	#pragma omp parallel for schedule(dynamic)
+#elif defined(_SCHEDULE_GUIDED_)
+	#pragma omp parallel for schedule(guided)
+#else
+	#pragma omp parallel for schedule(static)
+#endif
 	for (int i = 0; i < n; i++)
 	{
 		for (int j = 0; j < n; j++)
@@ -157,9 +163,13 @@ static void sparsematrix_init(double *m, int n)
 	{
 		for (int j = 0; j < n; j++)
 		{
-			int zero;
+			int zero = 0;
 
-			zero = (rand()%100 <= SPARSE_FACTOR) ? 0 : 1;
+			if (i%2)
+			{
+				if ((rand()%100) <= SPARSE_FACTOR)
+				   zero = 1;
+			}
 			
 			MATRIX(m, i, j) = (zero) ? 0.0 : rand()/10.0;
 		}
