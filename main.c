@@ -32,7 +32,15 @@
 
 #define MATRIX(m, i, j) m[(i)*n + (j)]
 
-void matrix_mult1(double *restrict c, const double *restrict a, const double *restrict b, int n)
+/**
+ * @brief Performs a matrix multiplication (outer for).
+ *
+ * @param c Resulting matrix.
+ * @param a First operand matrix.
+ * @param b Second operand matrix.
+ * @param n Matrix size.
+ */
+static void matrix_mult1(double *restrict c, const double *restrict a, const double *restrict b, int n)
 {
 	#pragma omp parallel for
 	for (int i = 0; i < n; i++)
@@ -45,7 +53,15 @@ void matrix_mult1(double *restrict c, const double *restrict a, const double *re
 	}
 }
 
-void matrix_mult2(double *restrict c, const double *restrict a, const double *restrict b, int n)
+/**
+ * @brief Performs a matrix multiplication (inner for).
+ *
+ * @param c Resulting matrix.
+ * @param a First operand matrix.
+ * @param b Second operand matrix.
+ * @param n Matrix size.
+ */
+static void matrix_mult2(double *restrict c, const double *restrict a, const double *restrict b, int n)
 {
 	for (int i = 0; i < n; i++)
 	{
@@ -59,11 +75,12 @@ void matrix_mult2(double *restrict c, const double *restrict a, const double *re
 }
 
 /**
- * @brief Performs a sparse matrix multiplication.
+ * @brief Performs a sparse matrix multiplication
  *
- * @param c Resulting matrix matrix.
- * @param a Sparse matrix.
- * @param b Dense matrix.
+ * @param c Resulting matrix.
+ * @param a First operand (sparse) matrix.
+ * @param b Second operand matrix.
+ * @param n Matrix size.
  */
 static void sparsematrix_mult(double *restrict c, const double *restrict a, const double *restrict b, int n)
 {
@@ -151,15 +168,14 @@ static void sparsematrix_init(double *m, int n)
 
 int main(int argc, char **argv)
 {
-	double start, end;
-	int n = 0;
-
+	int n;
 	double *a1;
 	double *a2;
 	double *b;
 	double *c1;
 	double *c2;
 	double *c3;
+	double start, end;
 
 	if (argc < 2)
 		usage();
@@ -209,6 +225,7 @@ int main(int argc, char **argv)
 	
 	/* House keeping. */
 	free(a1);
+	free(a2);
 	free(b);
 	free(c1);
 	free(c2);
