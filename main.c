@@ -165,7 +165,7 @@ static void sparsematrix_init(double *m, int n)
 		{
 			int zero = 0;
 
-			if (i%2)
+			if (i > n/2)
 			{
 				if ((rand()%100) <= SPARSE_FACTOR)
 				   zero = 1;
