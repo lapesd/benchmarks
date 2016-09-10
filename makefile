@@ -18,30 +18,43 @@
 #
 
 # Directories
-BINDIR = $(CURDIR)/bin
-INCDIR = $(CURDIR)/include
-SRCDIR = $(CURDIR)/src
+BINDIR     = $(CURDIR)/bin
+CONTRIBDIR = $(CURDIR)/contrib
+INCDIR     = $(CURDIR)/include
+SRCDIR     = $(CURDIR)/src
 
 # Toochain.
 CC=gcc
 
 # Toolchain configuration.
 CFLAGS   = -std=c99 -pedantic
+CFLAGS  += -I $(INCDIR) -I $(CONTRIBDIR)/include
 CFLAGS  += -Wall -Wextra -Werror
 CFLAGS  += -O3
-LDFLAGS += -fopenmp
+LDFLAGS += -fopenmp $(CONTRIBDIR)/lib/libpapi.a
+
+# Common source files.
+SRC = $(wildcard $(SRCDIR)/common/*.c)
+
+# Common object files.
+OBJ = $(SRC:.c=.o)
 
 # Builds all kernels.
 all: mm
 
 # Builds the MM kernel
-mm: bindir
-	$(CC) $(CFLAGS) $(SRCDIR)/mm/*.c $(LDFLAGS) -o $(BINDIR)/mm
+mm: bindir $(OBJ)
+	$(CC) $(CFLAGS) $(SRCDIR)/mm/*.c $(OBJ) $(LDFLAGS) -o $(BINDIR)/mm
 
 # Creates BINDIR
 bindir:
 	mkdir -p $(BINDIR)
 
+# Builds an object file from a C source file.
+%.o: %.c
+	$(CC) $< $(CFLAGS) -c -o $@
+
 # Cleans compilation files.
 clean:
 	rm -rf $(BINDIR)/*
+	rm -rf $(OBJ)

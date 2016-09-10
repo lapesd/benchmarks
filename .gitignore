@@ -1,2 +1,8 @@
 bin/*
-.swp
+contrib/bin
+contrib/include
+contrib/lib
+contrib/man
+contrib/share
+*.swp
+	*.o
