@@ -67,6 +67,7 @@ void profile_setup(int _nthreads)
 
 	nthreads = _nthreads;
 
+	assert(PAPI_library_init(PAPI_VER_CURRENT) == PAPI_VER_CURRENT);
 	assert(PAPI_thread_init((long unsigned (*)(void))omp_get_thread_num) == PAPI_OK);
 }
 
