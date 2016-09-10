@@ -46,19 +46,24 @@
  */
 static void matrix_mult1(double *restrict c, const double *restrict a, const double *restrict b, int n)
 {
-	profile_start();
 
-	#pragma omp parallel for
-	for (int i = 0; i < n; i++)
+	#pragma omp parallel
 	{
-		for (int j = 0; j < n; j++)
+		profile_start();
+
+		#pragma omp for
+		for (int i = 0; i < n; i++)
 		{
-			for (int k = 0; k < n; k++)
-				MATRIX(c, i, j) += MATRIX(a, i, k)*MATRIX(b, k, j);
+			for (int j = 0; j < n; j++)
+			{
+				for (int k = 0; k < n; k++)
+					MATRIX(c, i, j) += MATRIX(a, i, k)*MATRIX(b, k, j);
+			}
 		}
+
+		profile_end();
 	}
 
-	profile_end();
 	profile_dump();
 }
 
@@ -72,19 +77,23 @@ static void matrix_mult1(double *restrict c, const double *restrict a, const dou
  */
 static void matrix_mult2(double *restrict c, const double *restrict a, const double *restrict b, int n)
 {
-	profile_start();
-
 	for (int i = 0; i < n; i++)
 	{
-		#pragma omp parallel for
-		for (int j = 0; j < n; j++)
+		#pragma omp parallel
 		{
-			for (int k = 0; k < n; k++)
-				MATRIX(c, i, j) += MATRIX(a, i, k)*MATRIX(b, k, j);
+			profile_start();
+
+			#pragma omp for
+			for (int j = 0; j < n; j++)
+			{
+				for (int k = 0; k < n; k++)
+					MATRIX(c, i, j) += MATRIX(a, i, k)*MATRIX(b, k, j);
+			}
+
+			profile_end();
 		}
 	}
 
-	profile_end();
 	profile_dump();
 }
 
@@ -98,28 +107,32 @@ static void matrix_mult2(double *restrict c, const double *restrict a, const dou
  */
 static void sparsematrix_mult(double *restrict c, const double *restrict a, const double *restrict b, int n)
 {
-	profile_start();
-
-#if defined(_SCHEDULE_DYNAMIC_)
-	#pragma omp parallel for schedule(dynamic)
-#elif defined(_SCHEDULE_GUIDED_)
-	#pragma omp parallel for schedule(guided)
-#else
-	#pragma omp parallel for schedule(static)
-#endif
-	for (int i = 0; i < n; i++)
+	#pragma omp parallel
 	{
-		for (int j = 0; j < n; j++)
+		profile_start();
+	#if defined(_SCHEDULE_DYNAMIC_)
+		#pragma omp for schedule(dynamic)
+	#elif defined(_SCHEDULE_GUIDED_)
+		#pragma omp for schedule(guided)
+	#elif defined (_SCHEDULE_STATIC_)
+		#pragma omp for schedule(static)
+	#else
+		#error "no scheduling strategy defined"
+	#endif
+		for (int i = 0; i < n; i++)
 		{
-			for (int k = 0; k < n; k++)
+			for (int j = 0; j < n; j++)
 			{
-				if (MATRIX(a, i, k) != 0)
-					MATRIX(c, i, j) += MATRIX(a, i, k)*MATRIX(b, k, j);
+				for (int k = 0; k < n; k++)
+				{
+					if (MATRIX(a, i, k) != 0)
+						MATRIX(c, i, j) += MATRIX(a, i, k)*MATRIX(b, k, j);
+				}
 			}
 		}
+		profile_end();
 	}
 
-	profile_end();
 	profile_dump();
 }
 
@@ -214,6 +227,9 @@ int main(int argc, char **argv)
 
 	/* Sanity check. */
 	assert(n > 0);
+
+	/* Setup profiling. */
+	profile_setup(omp_get_num_procs());
 
 	a1 = matrix_create(n); matrix_init(a1, n);
 	b  = matrix_create(n); matrix_init(b,  n);

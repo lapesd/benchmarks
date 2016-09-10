@@ -22,11 +22,17 @@
 #include <stdio.h>
 
 #include <papi.h>
+#include <omp.h>
 
 /**
  * @brief Number of events to profile.
  */
 #define NR_EVENTS 4
+
+/**
+ * @brief Maximum number of threads to profile at once.
+ */
+#define MAX_THREADS 1024
 
 /**
  * @brief Events to profile.
@@ -41,7 +47,29 @@ static int events[NR_EVENTS] = {
 /**
  * @brief Hardware counters.
  */
-static long long hwcounters[NR_EVENTS];
+static long long hwcounters[MAX_THREADS][NR_EVENTS];
+
+/**
+ * @brief Number of threads being profiled.
+ */
+static int nthreads;
+
+/**
+ * @brief Setups profiler.
+ *
+ * @param _nthreads Number of threads to profile.
+ */
+void profile_setup(int _nthreads)
+{
+	/* Sanity check. */
+	assert(_nthreads > 0);
+	assert(_nthreads <= MAX_THREADS);
+
+	nthreads = _nthreads;
+
+	assert(PAPI_thread_init((long unsigned (*)(void))omp_get_thread_num) == PAPI_OK);
+}
+
 
 /**
  * @brief Start profiling.
@@ -56,7 +84,13 @@ void profile_start(void)
  */
 void profile_end(void)
 {
-	assert(PAPI_stop_counters(hwcounters, sizeof(events)) == PAPI_OK);
+	int tid;
+
+	tid = omp_get_thread_num();
+
+	assert(tid < nthreads);
+
+	assert(PAPI_stop_counters(&hwcounters[tid][0], sizeof(events)) == PAPI_OK);
 }
 
 /**
@@ -64,8 +98,17 @@ void profile_end(void)
  */
 void profile_dump(void)
 {
-	fprintf(stderr, "L1 Misses: %lld\n", hwcounters[0]);
-	fprintf(stderr, "L2 Misses: %lld\n", hwcounters[1]);
-	fprintf(stderr, "L2 Accesses: %lld\n", hwcounters[2]);
-	fprintf(stderr, "L3 Accesses: %lld\n", hwcounters[3]);
+	long long total[NR_EVENTS] = {0, };
+
+	/* Compute total statistics. */
+	for (int i = 0; i < nthreads; i++)
+	{
+		for (int j = 0; j < NR_EVENTS; j++)
+			total[j] += hwcounters[i][j];
+	}
+
+	fprintf(stderr, "L1 Misses: %lld\n", total[0]);
+	fprintf(stderr, "L2 Misses: %lld\n", total[1]);
+	fprintf(stderr, "L2 Accesses: %lld\n", total[2]);
+	fprintf(stderr, "L3 Accesses: %lld\n", total[3]);
 }

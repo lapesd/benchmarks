@@ -22,6 +22,7 @@
 #define PROFILE_H_
 
 	/* Forward definitions. */
+	extern void profile_setup(int);
 	extern void profile_start(void);
 	extern void profile_end(void);
 	extern void profile_dump(void);

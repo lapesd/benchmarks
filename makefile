@@ -44,7 +44,9 @@ all: mm
 
 # Builds the MM kernel
 mm: bindir $(OBJ)
-	$(CC) $(CFLAGS) $(SRCDIR)/mm/*.c $(OBJ) $(LDFLAGS) -o $(BINDIR)/mm
+	$(CC) $(CFLAGS) -D_SCHEDULE_STATIC_ $(SRCDIR)/mm/*.c $(OBJ) $(LDFLAGS) -o $(BINDIR)/mm.static
+	$(CC) $(CFLAGS) -D_SCHEDULE_GUIDED_ $(SRCDIR)/mm/*.c $(OBJ) $(LDFLAGS) -o $(BINDIR)/mm.guided
+	$(CC) $(CFLAGS) -D_SCHEDULE_DYNAMIC_ $(SRCDIR)/mm/*.c $(OBJ) $(LDFLAGS) -o $(BINDIR)/mm.dynamic
 
 # Creates BINDIR
 bindir:
