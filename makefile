@@ -1,22 +1,62 @@
+#
+# Copyright(C) 2016 Pedro H. Penna <pedrohenriquepenna@gmail.com>
+# 
+# This file is part of LaPeSD Benchmarks.
+# 
+# LaPeSD Benchmarks is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by the
+# Free Software Foundation; either version 3 of the License, or (at your
+# option) any later version.
+# 
+# LaPeSD Benchmarks is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+# or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+# for more details.
+# 
+# You should have received a copy of the GNU General Public License along
+# with LaPeSD Benchmarks. If not, see <http://www.gnu.org/licenses/>.
+#
+
+# Directories
+BINDIR     = $(CURDIR)/bin
+CONTRIBDIR = $(CURDIR)/contrib
+INCDIR     = $(CURDIR)/include
+SRCDIR     = $(CURDIR)/src
+
+# Toochain.
 CC=gcc
-CFLAGS   = -std=c99 -pedantic -Wall -Wextra -Werror
+
+# Toolchain configuration.
+CFLAGS   = -std=c99 -pedantic
+CFLAGS  += -I $(INCDIR) -I $(CONTRIBDIR)/include
+CFLAGS  += -Wall -Wextra -Werror
 CFLAGS  += -O3
-LDFLAGS += -fopenmp
+LDFLAGS += -fopenmp $(CONTRIBDIR)/lib/libpapi.a
 
-SRC = $(wildcard *.c)
+# Common source files.
+SRC = $(wildcard $(SRCDIR)/common/*.c)
 
-EXEC = mm
+# Common object files.
+OBJ = $(SRC:.c=.o)
 
-all: static guided dynamic
+# Builds all kernels.
+all: mm
 
-static:
-	$(CC) $(CFLAGS) -D_SCHEDULE_STATIC_ $(SRC) $(LDFLAGS) -o $(EXEC).static
+# Builds the MM kernel
+mm: bindir $(OBJ)
+	$(CC) $(CFLAGS) -D_SCHEDULE_STATIC_ $(SRCDIR)/mm/*.c $(OBJ) $(LDFLAGS) -o $(BINDIR)/mm.static
+	$(CC) $(CFLAGS) -D_SCHEDULE_GUIDED_ $(SRCDIR)/mm/*.c $(OBJ) $(LDFLAGS) -o $(BINDIR)/mm.guided
+	$(CC) $(CFLAGS) -D_SCHEDULE_DYNAMIC_ $(SRCDIR)/mm/*.c $(OBJ) $(LDFLAGS) -o $(BINDIR)/mm.dynamic
 
-guided:
-	$(CC) $(CFLAGS) -D_SCHEDULE_GUIDED_ $(SRC) $(LDFLAGS) -o $(EXEC).guided
+# Creates BINDIR
+bindir:
+	mkdir -p $(BINDIR)
 
-dynamic:
-	$(CC) $(CFLAGS) -D_SCHEDULE_DYNAMIC_ $(SRC) $(LDFLAGS) -o $(EXEC).dynamic
+# Builds an object file from a C source file.
+%.o: %.c
+	$(CC) $< $(CFLAGS) -c -o $@
 
+# Cleans compilation files.
 clean:
-	rm -rf $(EXEC).*
+	rm -rf $(BINDIR)/*
+	rm -rf $(OBJ)

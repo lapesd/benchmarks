@@ -3,25 +3,29 @@
  * 
  * This file is part of the LaPeSD Benchmarks Suite.
  * 
- * LaPeSD Benchmarks Suite is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as published
- * by the Free Software Foundation; either version 3 of the License, or (at
- * your option) any later version.
+ * LaPeSD Benchmarks Suite is free software; you can redistribute it
+ * and/or modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 3 of the
+ * License, or (at your option) any later version.
  *
  * LaPeSD Benchmarks Suite is distributed in the hope that it will be
- * useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
- * Public License for more details.
+ * useful, but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
  * 
- * You should have received a copy of the GNU General Public License along
- * with CAP Benchmarks. If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU General Public License
+ * along with CAP Benchmarks. If not, see
+ * <http://www.gnu.org/licenses/>.
  */
 
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
 #include <omp.h>
+
+#include <profile.h>
 
 #define NITERATIONS 5
 
@@ -42,15 +46,25 @@
  */
 static void matrix_mult1(double *restrict c, const double *restrict a, const double *restrict b, int n)
 {
-	#pragma omp parallel for
-	for (int i = 0; i < n; i++)
+
+	#pragma omp parallel
 	{
-		for (int j = 0; j < n; j++)
+		profile_start();
+
+		#pragma omp for
+		for (int i = 0; i < n; i++)
 		{
-			for (int k = 0; k < n; k++)
-				MATRIX(c, i, j) += MATRIX(a, i, k)*MATRIX(b, k, j);
+			for (int j = 0; j < n; j++)
+			{
+				for (int k = 0; k < n; k++)
+					MATRIX(c, i, j) += MATRIX(a, i, k)*MATRIX(b, k, j);
+			}
 		}
+
+		profile_end();
 	}
+
+	profile_dump();
 }
 
 /**
@@ -65,13 +79,22 @@ static void matrix_mult2(double *restrict c, const double *restrict a, const dou
 {
 	for (int i = 0; i < n; i++)
 	{
-		#pragma omp parallel for
-		for (int j = 0; j < n; j++)
+		#pragma omp parallel
 		{
-			for (int k = 0; k < n; k++)
-				MATRIX(c, i, j) += MATRIX(a, i, k)*MATRIX(b, k, j);
+			profile_start();
+
+			#pragma omp for
+			for (int j = 0; j < n; j++)
+			{
+				for (int k = 0; k < n; k++)
+					MATRIX(c, i, j) += MATRIX(a, i, k)*MATRIX(b, k, j);
+			}
+
+			profile_end();
 		}
 	}
+
+	profile_dump();
 }
 
 /**
@@ -84,24 +107,33 @@ static void matrix_mult2(double *restrict c, const double *restrict a, const dou
  */
 static void sparsematrix_mult(double *restrict c, const double *restrict a, const double *restrict b, int n)
 {
-#if defined(_SCHEDULE_DYNAMIC_)
-	#pragma omp parallel for schedule(dynamic)
-#elif defined(_SCHEDULE_GUIDED_)
-	#pragma omp parallel for schedule(guided)
-#else
-	#pragma omp parallel for schedule(static)
-#endif
-	for (int i = 0; i < n; i++)
+	#pragma omp parallel
 	{
-		for (int j = 0; j < n; j++)
+		profile_start();
+	#if defined(_SCHEDULE_DYNAMIC_)
+		#pragma omp for schedule(dynamic)
+	#elif defined(_SCHEDULE_GUIDED_)
+		#pragma omp for schedule(guided)
+	#elif defined (_SCHEDULE_STATIC_)
+		#pragma omp for schedule(static)
+	#else
+		#error "no scheduling strategy defined"
+	#endif
+		for (int i = 0; i < n; i++)
 		{
-			for (int k = 0; k < n; k++)
+			for (int j = 0; j < n; j++)
 			{
-				if (MATRIX(a, i, k) != 0)
-					MATRIX(c, i, j) += MATRIX(a, i, k)*MATRIX(b, k, j);
+				for (int k = 0; k < n; k++)
+				{
+					if (MATRIX(a, i, k) != 0)
+						MATRIX(c, i, j) += MATRIX(a, i, k)*MATRIX(b, k, j);
+				}
 			}
 		}
+		profile_end();
 	}
+
+	profile_dump();
 }
 
 /**
@@ -195,6 +227,9 @@ int main(int argc, char **argv)
 
 	/* Sanity check. */
 	assert(n > 0);
+
+	/* Setup profiling. */
+	profile_setup(omp_get_num_procs());
 
 	a1 = matrix_create(n); matrix_init(a1, n);
 	b  = matrix_create(n); matrix_init(b,  n);
