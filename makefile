@@ -31,7 +31,7 @@ CFLAGS   = -std=c99 -pedantic
 CFLAGS  += -I $(INCDIR) -I $(CONTRIBDIR)/include
 CFLAGS  += -Wall -Wextra -Werror
 CFLAGS  += -O3
-LDFLAGS += -fopenmp $(CONTRIBDIR)/lib/libpapi.a
+LDFLAGS += -fopenmp
 
 # Common source files.
 SRC = $(wildcard $(SRCDIR)/common/*.c)
@@ -40,13 +40,17 @@ SRC = $(wildcard $(SRCDIR)/common/*.c)
 OBJ = $(SRC:.c=.o)
 
 # Builds all kernels.
-all: mm
+all: mm vp
 
 # Builds the MM kernel
 mm: bindir $(OBJ)
 	$(CC) $(CFLAGS) -D_SCHEDULE_STATIC_ $(SRCDIR)/mm/*.c $(OBJ) $(LDFLAGS) -o $(BINDIR)/mm.static
 	$(CC) $(CFLAGS) -D_SCHEDULE_GUIDED_ $(SRCDIR)/mm/*.c $(OBJ) $(LDFLAGS) -o $(BINDIR)/mm.guided
 	$(CC) $(CFLAGS) -D_SCHEDULE_DYNAMIC_ $(SRCDIR)/mm/*.c $(OBJ) $(LDFLAGS) -o $(BINDIR)/mm.dynamic
+
+# Builds the VP kernel.
+vp: bindir $(OBJ)
+	$(CC) $(CFLAGS) $(SRCDIR)/vp/*.c $(OBJ) $(LDFLAGS) -o $(BINDIR)/vp
 
 # Creates BINDIR
 bindir:
