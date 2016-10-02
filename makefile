@@ -40,7 +40,7 @@ SRC = $(wildcard $(SRCDIR)/common/*.c)
 OBJ = $(SRC:.c=.o)
 
 # Builds all kernels.
-all: mm vp
+all: mm vp sequential
 
 # Builds the MM kernel
 mm: bindir $(OBJ)
@@ -51,6 +51,14 @@ mm: bindir $(OBJ)
 # Builds the VP kernel.
 vp: bindir $(OBJ)
 	$(CC) $(CFLAGS) $(SRCDIR)/vp/*.c $(OBJ) $(LDFLAGS) -o $(BINDIR)/vp
+
+# Builds sequential kernels.
+sequential:
+	$(CC) $(CFLAGS) $(SRCDIR)/sequential/cmp.c $(OBJ) $(LDFLAGS) -o $(BINDIR)/cmp.seq
+	$(CC) $(CFLAGS) $(SRCDIR)/sequential/fib.c $(OBJ) $(LDFLAGS) -o $(BINDIR)/fib.seq
+	$(CC) $(CFLAGS) $(SRCDIR)/sequential/mm.c $(OBJ) $(LDFLAGS) -o $(BINDIR)/mm.seq
+	$(CC) $(CFLAGS) $(SRCDIR)/sequential/prefix.c $(OBJ) $(LDFLAGS) -o $(BINDIR)/prefix.seq
+	$(CC) $(CFLAGS) $(SRCDIR)/sequential/vp.c $(OBJ) $(LDFLAGS) -o $(BINDIR)/vp.seq
 
 # Creates BINDIR
 bindir:
