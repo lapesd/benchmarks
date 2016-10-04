@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <omp.h>
 
-int stop;
+int stop = 20;
 
 long fib(int n)
 {
